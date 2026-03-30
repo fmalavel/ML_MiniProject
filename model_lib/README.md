@@ -25,7 +25,7 @@ Architecture overview:
 3. Final Dense layer predicts `nlat*nlon` values.
 4. Reshape to `(nlat, nlon, 1)`.
 
-### `MLP2.py` (:warning: not working)
+### `MLP2.py` (⚠️ not working)
 
 Purpose:
 A pixel-wise MLP baseline where each grid point is processed independently with shared weights across pixels. This keeps per-pixel learning while avoiding full flattening interactions.
