@@ -26,6 +26,7 @@ submit() {
     local training_frequency=$3
     local with_rasterized_ozone=$4
     local ndays=$5
+    local k_folds=$6
 
     # convert with_rasterized_ozone to boolean for the training script
     local with_rasterized_ozone_bool
@@ -43,7 +44,7 @@ submit() {
             MEM="200G"
             partition="cpu-long"
         else
-            MEM="50G"
+            MEM="30G"
             partition="cpu"
 
         fi
@@ -66,21 +67,22 @@ submit() {
         "${model_type}" \
         "${training_frequency}" \
         "${with_rasterized_ozone_bool}" \
-        "${ndays}"
+        "${ndays}" \
+        "${k_folds}"
 }
 
 model_types=(
     # "MLP"
-    "2DCNN"
-    # "3DCNN"
-    # "CNN+LSTM"
-    # "convLSTM"
-    # "UNet"
+    # "2DCNN"
+    "3DCNN"
+    "CNN+LSTM"
+    "convLSTM"
+    "UNet"
 )
 
 training_frequencies=(
     "daily"
-    "hourly"
+    # "hourly"
 )
 
 with_rasterized_ozone_options=(
@@ -90,7 +92,10 @@ with_rasterized_ozone_options=(
 
 # set the number of days for training based on the training frequency to manage runtime and memory requirements
 ndays_daily=93 # number of days in the dataset for daily frequency
-ndays_hourly=40 # number of days for hourly frequency to manage runtime and memory requirements
+ndays_hourly=30 # number of days for hourly frequency to manage runtime and memory requirements
+
+# number of k-folds for cross-validation (must be >= 2)
+k_folds=5
 
 # use a generic training script that can handle different model types, training frequencies, and rasterized ozone options based on command-line arguments
 script="Training_generic.py"
@@ -105,7 +110,7 @@ for model_type in "${model_types[@]}"; do
         fi
         # loop over rasterized ozone options to submit jobs for each combination of training frequency and rasterized ozone option
         for with_rasterized_ozone in "${with_rasterized_ozone_options[@]}"; do
-            submit "${script}" "${model_type}" "${training_frequency}" "${with_rasterized_ozone}" "${ndays}" 
+            submit "${script}" "${model_type}" "${training_frequency}" "${with_rasterized_ozone}" "${ndays}" "${k_folds}"
         done
     done
 done

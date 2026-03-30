@@ -31,7 +31,13 @@ def is_running_in_notebook():
         return False
 
 
-def load_pretrained_model(model_path, model_type=None, frequency="daily", with_rasterized_ozone=False):
+def load_pretrained_model(
+    model_path,
+    model_type=None,
+    frequency="daily",
+    with_rasterized_ozone=False,
+    kfold=None,
+):
     """
     Load a pretrained Keras model from the specified path.
 
@@ -45,6 +51,9 @@ def load_pretrained_model(model_path, model_type=None, frequency="daily", with_r
         Data frequency (e.g., "hourly", "daily"). Default is "daily".
     with_rasterized_ozone : bool
         Whether the model includes rasterized ozone as an input feature. Default is False.
+    kfold : int or None
+        Optional k-fold number appended to the filename (e.g., 2).
+        If None, no k-fold suffix is appended.
 
     Returns:
     --------
@@ -64,10 +73,11 @@ def load_pretrained_model(model_path, model_type=None, frequency="daily", with_r
         raise ValueError("model_type must be specified (e.g., 'CNN', 'MLP', 'CNN+LSTM', etc.)") 
     
     # Construct the full model name based on the provided parameters
+    kfold_suffix = f"_kfold{int(kfold)}" if kfold is not None else ""
     if with_rasterized_ozone:
-        model_name = f"{model_type}_model_{frequency}_with_rasterized_o3.keras"
+        model_name = f"{model_type}_model_{frequency}_with_rasterized_ozone{kfold_suffix}.keras"
     else:
-        model_name = f"{model_type}_model_{frequency}_met_only.keras"
+        model_name = f"{model_type}_model_{frequency}_met_only{kfold_suffix}.keras"
 
     model_file = os.path.join(model_path, model_name)
     if not os.path.exists(model_file):
@@ -418,6 +428,12 @@ def parse_arguments(model_type_default="MLP", model_type_help="Type of model to 
         type=int,
         default=None,
         help="Sequence length for model input (default: based on frequency)",
+    )
+    parser.add_argument(
+        "--k_folds",
+        type=int,
+        default=3,
+        help="Number of k-folds for cross-validation (default: 2, must be >= 2)",
     )
 
     args = parser.parse_args()

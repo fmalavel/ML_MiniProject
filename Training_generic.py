@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 import importlib
@@ -41,10 +41,12 @@ from model_lib.ml_utils import (
 # User parameters
 # Note: Adjust these parameters as needed before running the notebook
 
-model_type = "MLP" # Set to "MLP" or "LSTM" (LSTM not implemented in this notebook, but can be added later)
-model_type = "3DCNN" # Set to "MLP" or "LSTM" (LSTM not implemented in this notebook, but can be added later)
-model_type = "CNN+LSTM" # Set to "MLP" or "LSTM" (LSTM not implemented in this notebook, but can be added later)
-model_type = "UNet" # Set to "MLP" or "LSTM" (LSTM not implemented in this notebook, but can be added later)
+# model_type = "MLP" 
+# model_type = "2DCNN" 
+model_type = "3DCNN" 
+# model_type = "CNN+LSTM" 
+# model_type = "UNet" 
+# model_type = "convLSTM" 
 
 with_rasterized_ozone = False  # Set to True to include rasterized ozone data as input features; False to use only meteorological variables
 training_frequency = "daily"  # Set to "hourly" or "daily"
@@ -54,6 +56,10 @@ ndays = (
 sequence_length = (
     3 if training_frequency == "daily" else 48
 )  # Daily: 3 steps. Hourly: 48 steps (2 days).
+
+# Set number of k-folds for cross-validation (must be >=2)
+k_folds = 5
+print(f"\nUsing k-folds: {k_folds}. To change, set 'k_folds' to desired number of folds (must be >=2).")
 
 load_data_verbose = False  # Set to True to print detailed data loading information
 
@@ -65,6 +71,7 @@ if not is_running_in_notebook():
     model_type = args.model_type
     with_rasterized_ozone = args.with_rasterized_ozone
     sequence_length = args.sequence_length
+    k_folds = args.k_folds
 
 
 # config_name  (with_rasterized_ozone  or met_only) is used as key in results dict to store model, history, and tensors
@@ -79,10 +86,11 @@ print(f"Training frequency: {training_frequency}")
 print(f"Number of days: {ndays}")
 print(f"Include rasterized ozone as input features: {with_rasterized_ozone}")   
 print(f"Configuration name: {config_name}")
+print(f"Number of k-folds for cross-validation: {k_folds}")
 print(f"Sequence length (only for LSTM type models): {sequence_length} time steps")
 
 
-# In[ ]:
+# In[3]:
 
 
 # Base meteorological features — shared by both configurations.
@@ -138,7 +146,7 @@ print(f"  x_all shape: {x_all.shape}")
 print(f"  y_all shape: {y_all.shape}")
 
 
-# In[ ]:
+# In[4]:
 
 
 print("\n" + "="*80)
@@ -196,11 +204,9 @@ print("\nModel hyperparameters:")
 for key, value in hyperparameters.items():
     print(f"  {key}: {value}")
 
-k_folds = 2
-print(f"\nUsing k-folds: {k_folds}. To change, set 'k-folds' to desired number of folds (must be >=2).")
 
 
-# In[ ]:
+# In[5]:
 
 
 print("\n" + "="*80)
@@ -360,7 +366,7 @@ print("TRAINING COMPLETE - best fold model stored in 'results' with CV diagnosti
 print("="*80)
 
 
-# In[ ]:
+# In[6]:
 
 
 # -------------------------------------------------------------------------
@@ -371,7 +377,7 @@ if is_running_in_notebook():
     colors = {f"{config_name}": color for config_name, color in zip(results.keys(), ["steelblue", "tomato", "green", "purple"])}  # Assign same color to all lines of the same config
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle("MLP Training History — Model Comparison", fontsize=13)
+    fig.suptitle(f"{model_type} Training History — Model Comparison", fontsize=13)
 
     for config_name, res in results.items():
         hist  = res["history"].history
@@ -392,7 +398,7 @@ if is_running_in_notebook():
 
     # repeat using log y-scale
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle("MLP Training History (Log Scale) — Model Comparison", fontsize=13)
+    fig.suptitle(f"{model_type} Training History (Log Scale) — Model Comparison", fontsize=13)
     for config_name, res in results.items():
         hist  = res["history"].history
         color = colors.get(config_name, None)
@@ -429,10 +435,10 @@ if is_running_in_notebook(): # only show visualisations in notebook
             tf.zeros_like(residual),
         )
 
-        print(f"\n=== Predictions: {config_name} with model {model_type} ===")
+        print(f"\n=== Predictions: {config_name} with model {model_type} with k={k_folds} folds ===")
         for i in range(n_show):
             fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-            fig.suptitle(f"{config_name} with model {model_type} — Sample {i + 1}", fontsize=12)
+            fig.suptitle(f"{config_name} with model {model_type} with k={k_folds} folds — Sample {i + 1}", fontsize=14)
 
             im0 = axes[0].imshow(ytrue[i, ::-1, :, 0].numpy(), vmin=0, vmax=1, cmap="Spectral_r")
             axes[0].set_title("True Ozone")

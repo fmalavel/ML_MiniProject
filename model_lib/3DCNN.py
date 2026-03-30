@@ -4,6 +4,12 @@
 
 import tensorflow as tf
 
+
+def extract_last_timestep(tensor):
+    """Return features at the final time step: (batch, lat, lon, channels)."""
+    return tensor[:, -1, :, :, :]
+
+
 hyperparameters = {
     "model_name": "3DCNN_ozone_forecaster",
     "temporal_sequencing": True,
@@ -66,7 +72,7 @@ def build_3dcnn_ozone_forecaster(ntime, nlat, nlon, n_channels, config=None):
 
     # Keep only the last time slice (prediction at time t), then map to ozone.
     x_t = tf.keras.layers.Lambda(
-        lambda tensor: tensor[:, -1, :, :, :],
+        extract_last_timestep,
         name="features_at_t",
     )(x)
     outputs = tf.keras.layers.Conv2D(

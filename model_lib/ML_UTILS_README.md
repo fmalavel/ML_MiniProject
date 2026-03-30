@@ -49,7 +49,8 @@ load_pretrained_model(
     model_path: str,
     model_type: str,
     frequency: str = "daily",
-    with_rasterized_ozone: bool = False
+    with_rasterized_ozone: bool = False,
+    kfold: int | None = None
 ) -> tf.keras.Model
 ```
 
@@ -58,12 +59,15 @@ load_pretrained_model(
 - `model_type` (str): Model type for filename construction (e.g., "CNN", "MLP", "UNET")
 - `frequency` (str, optional): Data frequency ("daily" or "hourly"). Default: "daily"
 - `with_rasterized_ozone` (bool, optional): Whether model includes rasterized ozone feature. Default: False
+- `kfold` (int or None, optional): Optional k-fold number appended to filename (e.g., `2`). Default: `None`
 
 **Returns:** Loaded Keras model ready for inference or further training.
 
 **Filename convention:** 
-- With rasterized ozone: `{model_type}_model_{frequency}_with_rasterized_o3.keras`
-- Without: `{model_type}_model_{frequency}_met_only.keras`
+- With rasterized ozone: `{model_type}_model_{frequency}_with_rasterized_o3[_kfoldX].keras`
+- Without: `{model_type}_model_{frequency}_met_only[_kfoldX].keras`
+
+When `kfold=None`, no k-fold suffix is added.
 
 **Example:**
 ```python
@@ -73,7 +77,8 @@ model = load_pretrained_model(
     model_path="Trained_models",
     model_type="CNN",
     frequency="daily",
-    with_rasterized_ozone=True
+    with_rasterized_ozone=True,
+    kfold=2
 )
 ```
 
@@ -169,6 +174,7 @@ parse_arguments(
 - `model_type` — str
 - `ndays` — int (93 for daily, 30 for hourly if not specified)
 - `sequence_length` — int (3 for daily, 48 for hourly if not specified)
+- `k_folds` — int, number of CV folds (default: 2, must be ≥ 2)
 
 **CLI Arguments:**
 ```
@@ -177,16 +183,17 @@ parse_arguments(
 --model_type MODEL_TYPE
 --ndays NDAYS
 --sequence_length SEQUENCE_LENGTH
+--k_folds K_FOLDS
 ```
 
 **Example:**
 ```python
 from ml_utils import parse_arguments
 
-# In Training_CNN.ipynb:
+# In Training_generic.ipynb / Training_generic.py:
 args = parse_arguments(
-    model_type_default="CNN",
-    model_type_help="Type of CNN model to train"
+    model_type_default="3DCNN",
+    model_type_help="Type of model to train"
 )
 
 training_frequency = args.training_frequency
@@ -194,6 +201,7 @@ with_rasterized_ozone = args.with_rasterized_ozone
 model_type = args.model_type
 ndays = args.ndays
 sequence_length = args.sequence_length
+k_folds = args.k_folds
 ```
 
 ## Usage in Notebooks
@@ -217,21 +225,23 @@ from ml_utils import (
 # User parameters (overridden by CLI args when running as script)
 training_frequency = "daily"
 with_rasterized_ozone = True
-model_type = "CNN"  # or your model type
+model_type = "3DCNN"  # or your model type
 ndays = 93 if training_frequency == "daily" else 30
 sequence_length = 3 if training_frequency == "daily" else 48
+k_folds = 5  # number of CV folds (must be >= 2)
 
 # Apply CLI arguments only when run from shell (skip in notebook)
 if not is_running_in_notebook():
     args = parse_arguments(
         model_type_default=model_type,
-        model_type_help="Type of CNN model"
+        model_type_help="Type of model to train"
     )
     training_frequency = args.training_frequency
     with_rasterized_ozone = args.with_rasterized_ozone
     model_type = args.model_type
     ndays = args.ndays
     sequence_length = args.sequence_length
+    k_folds = args.k_folds
 ```
 
 ### 3. Load Data
@@ -269,7 +279,8 @@ model = load_pretrained_model(
     model_path="Trained_models",
     model_type=model_type,
     frequency=training_frequency,
-    with_rasterized_ozone=with_rasterized_ozone
+    with_rasterized_ozone=with_rasterized_ozone,
+    kfold=2
 )
 ```
 

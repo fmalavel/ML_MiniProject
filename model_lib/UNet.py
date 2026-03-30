@@ -4,6 +4,12 @@
 
 import tensorflow as tf
 
+
+def extract_last_timestep(tensor):
+    """Return features at the final time step: (batch, lat, lon, channels)."""
+    return tensor[:, -1, :, :, :]
+
+
 hyperparameters = {
     "model_name": "UNet_ozone_forecaster",
     "temporal_sequencing": True,
@@ -124,7 +130,7 @@ def build_unet_ozone_forecaster(ntime, nlat, nlon, n_channels, config=None):
     # Use skip maps at final time t in the decoder.
     skip_t = [
         tf.keras.layers.Lambda(
-            lambda t: t[:, -1, :, :, :],
+            extract_last_timestep,
             name=f"skip_t_{i + 1}",
         )(s)
         for i, s in enumerate(skips)
