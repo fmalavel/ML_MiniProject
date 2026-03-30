@@ -14,7 +14,7 @@ This folder contains the machine learning model definitions used to predict ozon
 
 ## Models
 
-### MLP (`MLP.py`)
+### `MLP.py`
 
 Purpose:
 A dense baseline that maps a single meteorological snapshot to an ozone field. It is useful as a simple benchmark when testing feature sets and training workflows.
@@ -25,7 +25,7 @@ Architecture overview:
 3. Final Dense layer predicts `nlat*nlon` values.
 4. Reshape to `(nlat, nlon, 1)`.
 
-### MLP2 (`MLP2.py`)
+### `MLP2.py` (:warning: not working)
 
 Purpose:
 A pixel-wise MLP baseline where each grid point is processed independently with shared weights across pixels. This keeps per-pixel learning while avoiding full flattening interactions.
@@ -36,7 +36,7 @@ Architecture overview:
 3. TimeDistributed Dense(1) gives one ozone value per pixel.
 4. Reshape back to `(nlat, nlon, 1)`.
 
-### 2DCNN (`2DCNN.py`)
+### `2DCNN.py`
 
 Purpose:
 A spatial convolutional model for single-time inputs, designed to capture local and regional spatial structures in meteorological fields.
@@ -47,7 +47,7 @@ Architecture overview:
 3. Final 1x1 Conv2D head projects features to one ozone channel.
 4. Output remains `(nlat, nlon, 1)`.
 
-### 3DCNN (`3DCNN.py`)
+### `3DCNN.py`
 
 Purpose:
 A sequence model that explicitly separates spatial and temporal feature extraction for meteorological time windows.
@@ -59,7 +59,7 @@ Architecture overview:
 4. Last time slice features are selected.
 5. 1x1 Conv2D head outputs ozone field `(nlat, nlon, 1)`.
 
-### CNN+LSTM (`CNN+LSTM.py`)
+### `CNN+LSTM.py`
 
 Purpose:
 A hybrid model combining CNN spatial encoding at each time step with LSTM temporal modeling across encoded feature sequences.
@@ -71,7 +71,7 @@ Architecture overview:
 4. One or more LSTM layers model temporal evolution.
 5. Dense projection to `nlat*nlon`, then reshape to `(nlat, nlon, 1)`.
 
-### ConvLSTM (`convLSTM.py`)
+### `convLSTM.py`
 
 Purpose:
 A spatiotemporal recurrent model that keeps spatial structure while learning temporal dependencies, suitable for sequence-based ozone forecasting.
@@ -82,7 +82,7 @@ Architecture overview:
 3. Conv2D refinement head (default 32 filters) plus Dropout.
 4. Final 1x1 Conv2D produces ozone output `(nlat, nlon, 1)`.
 
-### UNet (`UNet.py`)
+### `UNet.py`
 
 Purpose:
 A high-capacity encoder-decoder model with skip connections for multi-scale spatial reconstruction, extended with temporal modeling at the bottleneck.
