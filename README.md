@@ -8,6 +8,8 @@ The notebooks in the repository root cover the full workflow from preprocessing 
 
 ### Preprocessing notebooks
 
+These notebooks read and reprocess AQUM model outputs that have been previously extracted and filtered in ADAQ.py.
+
 - `Preproc_step1_Extract_model_features_and_save_daily_means.ipynb`
 - `Preproc_step1_Extract_model_features_and_save_hourly_means.ipynb`
 - `Preproc_step2_Interpolate_model_at_AURN_sites_and_Plot_daily.ipynb`
