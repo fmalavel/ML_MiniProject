@@ -28,7 +28,7 @@ import iris
 iris.FUTURE.save_split_attrs = True
 # iris.FUTURE.datum_support = False
 
-from ml_utils import (
+from model_lib.ml_utils import (
     is_running_in_notebook,
     load_and_preprocess_training_data,
     parse_arguments,
