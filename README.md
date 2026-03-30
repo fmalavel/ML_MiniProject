@@ -29,6 +29,7 @@ How to run it:
 	- `training_frequency`
 	- `with_rasterized_ozone`
 	- `ndays`
+	- `k_folds` (number of cross-validation folds, default: 5)
 3. Run all cells from top to bottom.
 4. Trained models are written to `Trained_models/`.
 
@@ -85,6 +86,7 @@ Notes:
   - `--model_type`
   - `--training_frequency`
   - `--ndays`
+  - `--k_folds`
   - optional `--with_rasterized_ozone`
 
 Outputs:

@@ -43,9 +43,9 @@ from model_lib.ml_utils import (
 
 # model_type = "MLP" 
 # model_type = "2DCNN" 
-model_type = "3DCNN" 
+# model_type = "3DCNN" 
 # model_type = "CNN+LSTM" 
-# model_type = "UNet" 
+model_type = "UNet" 
 # model_type = "convLSTM" 
 
 with_rasterized_ozone = False  # Set to True to include rasterized ozone data as input features; False to use only meteorological variables
@@ -60,6 +60,10 @@ sequence_length = (
 # Set number of k-folds for cross-validation (must be >=2)
 k_folds = 5
 print(f"\nUsing k-folds: {k_folds}. To change, set 'k_folds' to desired number of folds (must be >=2).")
+
+# Output directory for training plots
+plots_path = "Training_plot"
+trained_model_path = "Trained_models"
 
 load_data_verbose = False  # Set to True to print detailed data loading information
 
@@ -88,6 +92,7 @@ print(f"Include rasterized ozone as input features: {with_rasterized_ozone}")
 print(f"Configuration name: {config_name}")
 print(f"Number of k-folds for cross-validation: {k_folds}")
 print(f"Sequence length (only for LSTM type models): {sequence_length} time steps")
+print(f"Plots output path: {plots_path}")
 
 
 # In[3]:
@@ -206,7 +211,7 @@ for key, value in hyperparameters.items():
 
 
 
-# In[5]:
+# In[ ]:
 
 
 print("\n" + "="*80)
@@ -342,7 +347,6 @@ print(
 
 # saving best model when running as script
 if not is_running_in_notebook():
-    trained_model_path = "Trained_models"
     os.makedirs(trained_model_path, exist_ok=True)
     trained_model_name = f"{model_type}_model_{training_frequency}_{config_name}_kfold{int(k_folds)}.keras"
     save_path = os.path.join(trained_model_path, trained_model_name)
@@ -366,96 +370,111 @@ print("TRAINING COMPLETE - best fold model stored in 'results' with CV diagnosti
 print("="*80)
 
 
-# In[6]:
+# In[ ]:
 
 
 # -------------------------------------------------------------------------
 # Show training curves for  configuration 
 # Only in a jupyter notebook 
 # -------------------------------------------------------------------------
-if is_running_in_notebook():
-    colors = {f"{config_name}": color for config_name, color in zip(results.keys(), ["steelblue", "tomato", "green", "purple"])}  # Assign same color to all lines of the same config
+colors = {f"{config_name}": color for config_name, color in zip(results.keys(), ["steelblue", "tomato", "green", "purple"])}  # Assign same color to all lines of the same config
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle(f"{model_type} Training History — Model Comparison", fontsize=13)
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+fig.suptitle(f"{model_type} Training History — Model Comparison", fontsize=13)
 
-    for config_name, res in results.items():
-        hist  = res["history"].history
-        color = colors.get(config_name, None)
-        axes[0].plot(hist["loss"],     color=color, label=f"Train — {config_name}")
-        axes[0].plot(hist["val_loss"], color=color, linestyle="--", label=f"Val — {config_name}")
-        axes[1].plot(hist["mae"],      color=color, label=f"Train — {config_name}")
-        axes[1].plot(hist["val_mae"],  color=color, linestyle="--", label=f"Val — {config_name}")
+for config_name, res in results.items():
+    hist  = res["history"].history
+    color = colors.get(config_name, None)
+    axes[0].plot(hist["loss"],     color=color, label=f"Train — {config_name}")
+    axes[0].plot(hist["val_loss"], color=color, linestyle="--", label=f"Val — {config_name}")
+    axes[1].plot(hist["mae"],      color=color, label=f"Train — {config_name}")
+    axes[1].plot(hist["val_mae"],  color=color, linestyle="--", label=f"Val — {config_name}")
 
-    for ax, title, ylabel in zip(axes, ["Loss (MSE)", "MAE"], ["MSE", "MAE"]):
-        ax.set_title(title)
-        ax.set_xlabel("Epoch")
-        ax.set_ylabel(ylabel)
-        ax.legend(fontsize=9)
+for ax, title, ylabel in zip(axes, ["Loss (MSE)", "MAE"], ["MSE", "MAE"]):
+    ax.set_title(title)
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel(ylabel)
+    ax.legend(fontsize=9)
 
-    plt.tight_layout()
-    plt.show()
+plt.tight_layout()
+plt.show()
 
-    # repeat using log y-scale
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle(f"{model_type} Training History (Log Scale) — Model Comparison", fontsize=13)
-    for config_name, res in results.items():
-        hist  = res["history"].history
-        color = colors.get(config_name, None)
-        axes[0].plot(hist["loss"],     color=color, label=f"Train — {config_name}")
-        axes[0].plot(hist["val_loss"], color=color, linestyle="--", label=f"Val — {config_name}")
-        axes[1].plot(hist["mae"],      color=color, label=f"Train — {config_name}")
-        axes[1].plot(hist["val_mae"],  color=color, linestyle="--", label=f"Val — {config_name}")
-    for ax, title, ylabel in zip(axes, ["Loss (MSE)", "MAE"], ["MSE", "MAE"]):
-        ax.set_title(title)
-        ax.set_xlabel("Epoch")
-        ax.set_ylabel(ylabel)
-        ax.set_yscale("log")
-        ax.legend(fontsize=9)
+if not is_running_in_notebook(): # only save visualisations in CLI
+    plot_name = f"{model_type}_model_{training_frequency}_{config_name}_kfold{int(k_folds)}_training_curve.png"
+    save_path = os.path.join(plots_path, plot_name)
+    plt.savefig(save_path)
+    print(f"Training curve plot saved to: {save_path}")
 
-    plt.tight_layout()
-    plt.show()
+# repeat using log y-scale
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+fig.suptitle(f"{model_type} Training History (Log Scale) — Model Comparison", fontsize=13)
+for config_name, res in results.items():
+    hist  = res["history"].history
+    color = colors.get(config_name, None)
+    axes[0].plot(hist["loss"],     color=color, label=f"Train — {config_name}")
+    axes[0].plot(hist["val_loss"], color=color, linestyle="--", label=f"Val — {config_name}")
+    axes[1].plot(hist["mae"],      color=color, label=f"Train — {config_name}")
+    axes[1].plot(hist["val_mae"],  color=color, linestyle="--", label=f"Val — {config_name}")
+for ax, title, ylabel in zip(axes, ["Loss (MSE)", "MAE"], ["MSE", "MAE"]):
+    ax.set_title(title)
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel(ylabel)
+    ax.set_yscale("log")
+    ax.legend(fontsize=9)
 
+plt.tight_layout()
+plt.show()
+
+if not is_running_in_notebook(): # only save visualisations in CLI
+    plot_name = f"{model_type}_model_{training_frequency}_{config_name}_kfold{int(k_folds)}_training_curve_log.png"
+    save_path = os.path.join(plots_path, plot_name)
+    plt.savefig(save_path)
+    print(f"Training log-scale curve plot saved to: {save_path}")
 
 
 # In[ ]:
 
 
 # Detailed predictions vs true values for the first few time steps, per configuration
-if is_running_in_notebook(): # only show visualisations in notebook
-    n_show = 6  # number of time steps to visualise per configuration
+n_show = 6  # number of time steps to visualise per configuration
 
-    for config_name, res in results.items():
-        pred          = res["model"].predict(res["xtrain_tensor"][:n_show])
-        ytrue         = res["ytrain_tensor"][:n_show]
-        residual      = ytrue - pred
-        relative_error = tf.where(
-            ytrue != 0,
-            100 * (residual / ytrue),
-            tf.zeros_like(residual),
-        )
+for config_name, res in results.items():
+    pred          = res["model"].predict(res["xtrain_tensor"][:n_show])
+    ytrue         = res["ytrain_tensor"][:n_show]
+    residual      = ytrue - pred
+    relative_error = tf.where(
+        ytrue != 0,
+        100 * (residual / ytrue),
+        tf.zeros_like(residual),
+    )
 
-        print(f"\n=== Predictions: {config_name} with model {model_type} with k={k_folds} folds ===")
-        for i in range(n_show):
-            fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-            fig.suptitle(f"{config_name} with model {model_type} with k={k_folds} folds — Sample {i + 1}", fontsize=14)
+    print(f"\n=== Predictions: {config_name} with model {model_type} with k={k_folds} folds ===")
+    for i in range(n_show):
+        fig, axes = plt.subplots(1, 4, figsize=(20, 5))
+        fig.suptitle(f"{config_name} with model {model_type} with k={k_folds} folds — Sample {i + 1}", fontsize=14)
 
-            im0 = axes[0].imshow(ytrue[i, ::-1, :, 0].numpy(), vmin=0, vmax=1, cmap="Spectral_r")
-            axes[0].set_title("True Ozone")
-            plt.colorbar(im0, ax=axes[0], label="Normalized")
+        im0 = axes[0].imshow(ytrue[i, ::-1, :, 0].numpy(), vmin=0, vmax=1, cmap="Spectral_r")
+        axes[0].set_title("True Ozone")
+        plt.colorbar(im0, ax=axes[0], label="Normalized")
 
-            im1 = axes[1].imshow(pred[i, ::-1, :, 0], vmin=0, vmax=1, cmap="Spectral_r")
-            axes[1].set_title("Predicted Ozone")
-            plt.colorbar(im1, ax=axes[1], label="Normalized")
+        im1 = axes[1].imshow(pred[i, ::-1, :, 0], vmin=0, vmax=1, cmap="Spectral_r")
+        axes[1].set_title("Predicted Ozone")
+        plt.colorbar(im1, ax=axes[1], label="Normalized")
 
-            im2 = axes[2].imshow(residual[i, ::-1, :, 0].numpy(), vmin=-1, vmax=1, cmap="bwr")
-            axes[2].set_title("Residual (True − Predicted)")
-            plt.colorbar(im2, ax=axes[2], label="Residual")
+        im2 = axes[2].imshow(residual[i, ::-1, :, 0].numpy(), vmin=-1, vmax=1, cmap="bwr")
+        axes[2].set_title("Residual (True − Predicted)")
+        plt.colorbar(im2, ax=axes[2], label="Residual")
 
-            im3 = axes[3].imshow(relative_error[i, ::-1, :, 0].numpy(), vmin=-100, vmax=100, cmap="coolwarm")
-            axes[3].set_title("Relative Error [%]")
-            plt.colorbar(im3, ax=axes[3], label="%")
+        im3 = axes[3].imshow(relative_error[i, ::-1, :, 0].numpy(), vmin=-100, vmax=100, cmap="coolwarm")
+        axes[3].set_title("Relative Error [%]")
+        plt.colorbar(im3, ax=axes[3], label="%")
 
-            plt.tight_layout()
-            plt.show()
+        plt.tight_layout()
+        plt.show()
+
+if not is_running_in_notebook(): # only save visualisations in CLI
+    plot_name = f"{model_type}_model_{training_frequency}_{config_name}_kfold{int(k_folds)}_snapshots.png"
+    save_path = os.path.join(plots_path, plot_name)
+    plt.savefig(save_path)
+    print(f"Snapshots plot saved to: {save_path}")
 
