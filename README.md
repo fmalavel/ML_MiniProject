@@ -1,7 +1,91 @@
 # ML_MiniProject
 
-Code for the 2026 ML Foundations mini project. The repository root contains the end-to-end notebooks used for preprocessing, training, and model evaluation: `Preproc_step1_Extract_model_features_and_save_daily_means.ipynb`, `Preproc_step1_Extract_model_features_and_save_hourly_means.ipynb`, `Preproc_step2_Interpolate_model_at_AURN_sites_and_Plot_daily.ipynb`, `Preproc_step2_Interpolate_model_at_AURN_sites_and_Plot_hourly.ipynb`, `Preproc_step3_Rasterize_ozone_at_aurn_site_and_save_daily_means_snapshots.ipynb`, `Preproc_step3_Rasterize_ozone_at_aurn_site_and_save_hourly_means_snapshots.ipynb`, `Training_generic.ipynb`, and `Load_preTrained_models.ipynb`. Use `Training_generic.ipynb` to train models by selecting `model_type`, `training_frequency`, `with_rasterized_ozone`, and `ndays` in the parameter cell, then run all cells in order. Use `Load_preTrained_models.ipynb` to visualize pre-trained models by setting the same configuration parameters, loading a model from `Trained_models/`, evaluating predictions, and plotting ozone maps and residual diagnostics.
+Machine Learning Foundations (2026) mini project focused on predicting ozone concentration fields from meteorological data.
 
-Models are implemented in `model_lib/` and all target ozone concentration prediction fields from meteorological inputs (optionally with a rasterized ozone channel). Architectures include `MLP.py` (fully connected baseline on flattened inputs), `MLP2.py` (pixel-wise shared MLP via `TimeDistributed` dense layers), `2DCNN.py` (spatial 2D convolutions for single snapshots), `3DCNN.py` (spatial-then-temporal 3D convolutions on sequences), `CNN+LSTM.py` (TimeDistributed CNN encoder followed by LSTM temporal modeling), `convLSTM.py` (ConvLSTM sequence model for spatiotemporal dynamics), and `UNet.py` (encoder-decoder with skip connections and temporal ConvLSTM bottleneck). Shared loading and CLI utilities are centralized in `model_lib/ml_utils.py`.
+## Notebook Workflow (Repository Root)
 
-For Met Office SPICE users, submit training through SLURM after converting the generic notebook to a Python script. First run `bash convert_notebook_to_python.sh` to generate `Training_generic.py` from `Training_generic.ipynb`. Then review model/frequency options in `submit_training_to_spice.sh` and submit jobs with `bash submit_training_to_spice.sh`; this script calls `submit_training_to_spice.sbatch`, activates `MLFoundationsEnv`, and passes CLI arguments (`--model_type`, `--training_frequency`, `--ndays`, and optionally `--with_rasterized_ozone`) to `Training_generic.py`. Logs are written to `logs/` and model outputs to `Trained_models/`.
+The notebooks in the repository root cover the full workflow from preprocessing to model training and evaluation.
+
+### Preprocessing notebooks
+
+- `Preproc_step1_Extract_model_features_and_save_daily_means.ipynb`
+- `Preproc_step1_Extract_model_features_and_save_hourly_means.ipynb`
+- `Preproc_step2_Interpolate_model_at_AURN_sites_and_Plot_daily.ipynb`
+- `Preproc_step2_Interpolate_model_at_AURN_sites_and_Plot_hourly.ipynb`
+- `Preproc_step3_Rasterize_ozone_at_aurn_site_and_save_daily_means_snapshots.ipynb`
+- `Preproc_step3_Rasterize_ozone_at_aurn_site_and_save_hourly_means_snapshots.ipynb`
+
+### Training notebook
+
+- `Training_generic.ipynb`
+
+How to run it:
+
+1. Open `Training_generic.ipynb`.
+2. In the parameter cell, set:
+	- `model_type`
+	- `training_frequency`
+	- `with_rasterized_ozone`
+	- `ndays`
+3. Run all cells from top to bottom.
+4. Trained models are written to `Trained_models/`.
+
+### Pre-trained model visualization notebook
+
+- `Load_preTrained_models.ipynb`
+
+How to use it:
+
+1. Set the same configuration (`model_type`, frequency, rasterized option) used for training.
+2. Load the corresponding model from `Trained_models/`.
+3. Run evaluation and visualization cells to inspect:
+	- prediction maps
+	- residual maps
+	- related diagnostics
+
+## Model Library (model_lib)
+
+Models in `model_lib/` are designed to predict ozone fields from meteorological predictors, with optional inclusion of rasterized ozone as an additional input feature.
+
+- `MLP.py`: Fully connected baseline on flattened spatial input.
+- `MLP2.py`: Pixel-wise shared MLP using `TimeDistributed` dense layers.
+- `2DCNN.py`: Spatial-only CNN for single-time snapshots.
+- `3DCNN.py`: Spatiotemporal model using 3D convolutions.
+- `CNN+LSTM.py`: TimeDistributed CNN encoder plus LSTM temporal modeling.
+- `convLSTM.py`: ConvLSTM sequence model for joint spatial-temporal dynamics.
+- `UNet.py`: Encoder-decoder with skip connections and temporal ConvLSTM bottleneck.
+- `ml_utils.py`: Shared utilities for data loading/preprocessing, model loading, notebook detection, and CLI parsing.
+
+## Met Office SPICE / SLURM Submission
+
+For SPICE users, convert the generic training notebook into a Python script before submission.
+
+### Step 1: Convert notebook to Python
+
+```bash
+bash convert_notebook_to_python.sh
+```
+
+This generates `Training_generic.py` from `Training_generic.ipynb`.
+
+### Step 2: Submit SLURM jobs
+
+```bash
+bash submit_training_to_spice.sh
+```
+
+Notes:
+
+- `submit_training_to_spice.sh` controls model/frequency/rasterized combinations.
+- Jobs are submitted through `submit_training_to_spice.sbatch`.
+- The job script activates `MLFoundationsEnv`.
+- Training CLI arguments passed to `Training_generic.py` include:
+  - `--model_type`
+  - `--training_frequency`
+  - `--ndays`
+  - optional `--with_rasterized_ozone`
+
+Outputs:
+
+- Logs: `logs/`
+- Trained models: `Trained_models/`
