@@ -62,7 +62,7 @@ k_folds = 5
 print(f"\nUsing k-folds: {k_folds}. To change, set 'k_folds' to desired number of folds (must be >=2).")
 
 # Output directory for training plots
-plots_path = "Training_plot"
+plot_path = "Training_plot"
 trained_model_path = "Trained_models"
 
 load_data_verbose = False  # Set to True to print detailed data loading information
@@ -92,7 +92,9 @@ print(f"Include rasterized ozone as input features: {with_rasterized_ozone}")
 print(f"Configuration name: {config_name}")
 print(f"Number of k-folds for cross-validation: {k_folds}")
 print(f"Sequence length (only for LSTM type models): {sequence_length} time steps")
-print(f"Plots output path: {plots_path}")
+print(f"Plots output path: {plot_path}")
+print(f"Trained models output path: {trained_model_path}")
+print("=" * 80 + "\n")
 
 
 # In[3]:
@@ -291,8 +293,8 @@ for fold_id, val_idx in enumerate(fold_indices, start=1):
         # Print model summary only for the first fold to avoid cluttering output; the architecture is the same for all folds
         model.summary()
         # Save a diagram of the model.
-        plot_model(model, to_file=f'{model_type}_diagram.png', show_shapes=True, show_layer_names=True)
-        print(f"\n{model_type} model diagram saved as '{model_type}_diagram.png'.")
+        plot_model(model, to_file=f'{plot_path}/{model_type}_diagram.png', show_shapes=True, show_layer_names=True)
+        print(f"\n{model_type} model diagram saved as '{plot_path}/{model_type}_diagram.png'.")
 
     # callbacks (EarlyStopping, ReduceLROnPlateau)
     callbacks = [
@@ -401,7 +403,7 @@ plt.show()
 
 if not is_running_in_notebook(): # only save visualisations in CLI
     plot_name = f"{model_type}_model_{training_frequency}_{config_name}_kfold{int(k_folds)}_training_curve.png"
-    save_path = os.path.join(plots_path, plot_name)
+    save_path = os.path.join(plot_path, plot_name)
     plt.savefig(save_path)
     print(f"Training curve plot saved to: {save_path}")
 
@@ -427,7 +429,7 @@ plt.show()
 
 if not is_running_in_notebook(): # only save visualisations in CLI
     plot_name = f"{model_type}_model_{training_frequency}_{config_name}_kfold{int(k_folds)}_training_curve_log.png"
-    save_path = os.path.join(plots_path, plot_name)
+    save_path = os.path.join(plot_path, plot_name)
     plt.savefig(save_path)
     print(f"Training log-scale curve plot saved to: {save_path}")
 
@@ -451,7 +453,7 @@ for config_name, res in results.items():
     print(f"\n=== Predictions: {config_name} with model {model_type} with k={k_folds} folds ===")
     for i in range(n_show):
         fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-        fig.suptitle(f"{config_name} with model {model_type} with k={k_folds} folds — Sample {i + 1}", fontsize=14)
+        fig.suptitle(f"{config_name} with model {model_type} with k={k_folds} folds — Sample {i + 1:02d}", fontsize=14)
 
         im0 = axes[0].imshow(ytrue[i, ::-1, :, 0].numpy(), vmin=0, vmax=1, cmap="Spectral_r")
         axes[0].set_title("True Ozone")
@@ -472,9 +474,9 @@ for config_name, res in results.items():
         plt.tight_layout()
         plt.show()
 
-if not is_running_in_notebook(): # only save visualisations in CLI
-    plot_name = f"{model_type}_model_{training_frequency}_{config_name}_kfold{int(k_folds)}_snapshots.png"
-    save_path = os.path.join(plots_path, plot_name)
-    plt.savefig(save_path)
-    print(f"Snapshots plot saved to: {save_path}")
+        if not is_running_in_notebook(): # only save visualisations in CLI
+            plot_name = f"{model_type}_model_{training_frequency}_{config_name}_kfold{int(k_folds)}_snapshots-{i + 1:02d}.png"
+            save_path = os.path.join(plot_path, plot_name)
+            plt.savefig(save_path)
+            print(f"Snapshots plot saved to: {save_path}")
 

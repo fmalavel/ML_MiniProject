@@ -73,11 +73,11 @@ submit() {
 
 model_types=(
     "MLP"
-    # "2DCNN"
-    # "3DCNN"
-    # "CNN+LSTM"
-    # "convLSTM"
-    # "UNet"
+    "2DCNN"
+    "3DCNN"
+    "CNN+LSTM"
+    "convLSTM"
+    "UNet"
 )
 
 training_frequencies=(
@@ -86,7 +86,7 @@ training_frequencies=(
 )
 
 with_rasterized_ozone_options=(
-    # "with_rasterized_ozone"
+    "with_rasterized_ozone"
     "met_only"
 )
 
