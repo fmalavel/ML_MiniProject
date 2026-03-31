@@ -39,13 +39,16 @@ submit() {
     # determine memory & partition based on training frequency
     local MEM
     local partition
+    local time_limit
     # if hourly mem 150G, if daily mem 20G
         if [ "${training_frequency}" == "hourly" ]; then
             MEM="200G"
             partition="cpu-long"
+            time_limit="2-00:00:00"
         else
             MEM="30G"
             partition="cpu"
+            time_limit="02:00:00"
 
         fi
 
@@ -60,6 +63,7 @@ submit() {
         --job-name="${jobname}" \
         --partition="${partition}" \
         --mem="${MEM}" \
+        --time="${time_limit}" \
         --output="${jobout}" \
         --error="${joberr}" \
         submit_training_to_spice.sbatch \
@@ -81,18 +85,18 @@ model_types=(
 )
 
 training_frequencies=(
-    "daily"
-    # "hourly"
+    # "daily"
+    "hourly"
 )
 
 with_rasterized_ozone_options=(
-    "with_rasterized_ozone"
+    # "with_rasterized_ozone"
     "met_only"
 )
 
 # set the number of days for training based on the training frequency to manage runtime and memory requirements
 ndays_daily=93 # number of days in the dataset for daily frequency
-ndays_hourly=30 # number of days for hourly frequency to manage runtime and memory requirements
+ndays_hourly=90 # number of days for hourly frequency to manage runtime and memory requirements
 
 # number of k-folds for cross-validation (must be >= 2)
 k_folds=5

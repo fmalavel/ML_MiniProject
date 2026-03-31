@@ -2,6 +2,12 @@
 
 Machine Learning Foundations (2026) mini project focused on predicting ozone concentration fields from meteorological data.
 
+## Recent Changes
+
+- Added explicit k-fold cross-validation control (`k_folds`) in training workflow and CLI execution.
+- Standardized SPICE submission through `submit_training_to_spice.sh` + `submit_training_to_spice.sbatch`.
+- Moved SLURM walltime out of `submit_training_to_spice.sbatch`; it is now set dynamically in `submit_training_to_spice.sh` by training frequency.
+
 ## Notebook Workflow (Repository Root)
 
 The notebooks in the repository root cover the full workflow from preprocessing to model training and evaluation.
@@ -30,10 +36,14 @@ How to run it:
 	- `with_rasterized_ozone`
 	- `ndays`
 	- `k_folds` (number of cross-validation folds, default: 5)
+	- `sequence_length` (used for temporal models; defaults are frequency-dependent)
 3. Run all cells from top to bottom.
 4. Trained models are written to `Trained_models/`.
+5. Training/evaluation plots are saved to `Training_plot/`.
 
-### Pre-trained model visualization notebook
+When run as a script (`Training_generic.py`), the same parameters are passed through CLI flags from SPICE submission scripts.
+
+### Pre-trained model visualization notebook (⚠️ need fixing)
 
 - `Load_preTrained_models.ipynb`
 
@@ -82,6 +92,7 @@ Notes:
 - `submit_training_to_spice.sh` controls model/frequency/rasterized combinations.
 - Jobs are submitted through `submit_training_to_spice.sbatch`.
 - The job script activates `MLFoundationsEnv`.
+- SLURM `--time` is passed at submission time from `submit_training_to_spice.sh` (not hardcoded in `submit_training_to_spice.sbatch`).
 - Training CLI arguments passed to `Training_generic.py` include:
   - `--model_type`
   - `--training_frequency`
@@ -89,7 +100,13 @@ Notes:
   - `--k_folds`
   - optional `--with_rasterized_ozone`
 
+Current SPICE resource defaults by frequency:
+
+- `daily`: partition `cpu`, memory `30G`, walltime `02:00:00`, default `ndays=93`
+- `hourly`: partition `cpu-long`, memory `200G`, walltime `2-00:00:00`, default `ndays=90`
+
 Outputs:
 
 - Logs: `logs/`
 - Trained models: `Trained_models/`
+- Plots/figures: `Training_plot/`

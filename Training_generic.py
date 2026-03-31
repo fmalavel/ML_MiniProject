@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[7]:
 
 
 import importlib
@@ -44,8 +44,8 @@ from model_lib.ml_utils import (
 # model_type = "MLP" 
 # model_type = "2DCNN" 
 # model_type = "3DCNN" 
-# model_type = "CNN+LSTM" 
-model_type = "UNet" 
+model_type = "CNN+LSTM" 
+# model_type = "UNet" 
 # model_type = "convLSTM" 
 
 with_rasterized_ozone = False  # Set to True to include rasterized ozone data as input features; False to use only meteorological variables
@@ -77,7 +77,6 @@ if not is_running_in_notebook():
     sequence_length = args.sequence_length
     k_folds = args.k_folds
 
-
 # config_name  (with_rasterized_ozone  or met_only) is used as key in results dict to store model, history, and tensors
 config_name = "with_rasterized_ozone" if with_rasterized_ozone else "met_only"
 
@@ -97,7 +96,7 @@ print(f"Trained models output path: {trained_model_path}")
 print("=" * 80 + "\n")
 
 
-# In[3]:
+# In[9]:
 
 
 # Base meteorological features — shared by both configurations.
@@ -153,7 +152,7 @@ print(f"  x_all shape: {x_all.shape}")
 print(f"  y_all shape: {y_all.shape}")
 
 
-# In[4]:
+# In[10]:
 
 
 print("\n" + "="*80)
@@ -213,7 +212,7 @@ for key, value in hyperparameters.items():
 
 
 
-# In[ ]:
+# In[11]:
 
 
 print("\n" + "="*80)
@@ -372,7 +371,7 @@ print("TRAINING COMPLETE - best fold model stored in 'results' with CV diagnosti
 print("="*80)
 
 
-# In[ ]:
+# In[12]:
 
 
 # -------------------------------------------------------------------------
@@ -434,40 +433,60 @@ if not is_running_in_notebook(): # only save visualisations in CLI
     print(f"Training log-scale curve plot saved to: {save_path}")
 
 
-# In[ ]:
+# In[14]:
 
 
-# Detailed predictions vs true values for the first few time steps, per configuration
-n_show = 6  # number of time steps to visualise per configuration
+# Detailed predictions vs true values for selected time steps, per configuration
+n_show = 7  # number of snapshots to visualise per configuration
+sample_step = 24 if training_frequency == "hourly" else 1  # hourly: every 24 hours; daily: consecutive days
 
 for config_name, res in results.items():
-    pred          = res["model"].predict(res["xtrain_tensor"][:n_show])
-    ytrue         = res["ytrain_tensor"][:n_show]
-    residual      = ytrue - pred
+    n_available = int(res["xtrain_tensor"].shape[0])
+    start_idx = 12 if training_frequency == "hourly" else 0
+    if start_idx >= n_available:
+        start_idx = max(0, n_available - 1)
+    snapshot_indices = list(range(start_idx, n_available, sample_step))[:n_show]
+
+    if not snapshot_indices:
+        print(f"No samples available for config '{config_name}'.")
+        continue
+
+    x_selected = tf.gather(res["xtrain_tensor"], snapshot_indices)
+    ytrue = tf.gather(res["ytrain_tensor"], snapshot_indices)
+    pred = res["model"].predict(x_selected)
+    residual = ytrue - pred
     relative_error = tf.where(
         ytrue != 0,
         100 * (residual / ytrue),
         tf.zeros_like(residual),
     )
 
-    print(f"\n=== Predictions: {config_name} with model {model_type} with k={k_folds} folds ===")
-    for i in range(n_show):
-        fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-        fig.suptitle(f"{config_name} with model {model_type} with k={k_folds} folds — Sample {i + 1:02d}", fontsize=14)
+    print(
+        f"\n=== Predictions: {config_name} with model {model_type} with k={k_folds} folds "
+        f"(showing {len(snapshot_indices)} snapshots, start={start_idx}, step={sample_step}) ==="
+    )
 
-        im0 = axes[0].imshow(ytrue[i, ::-1, :, 0].numpy(), vmin=0, vmax=1, cmap="Spectral_r")
+    for plot_idx, sample_idx in enumerate(snapshot_indices):
+        fig, axes = plt.subplots(1, 4, figsize=(20, 5))
+        fig.suptitle(
+            f"{config_name} with model {model_type} with k={k_folds} folds — "
+            f"Sample {plot_idx + 1:02d} (index {sample_idx})",
+            fontsize=14,
+        )
+
+        im0 = axes[0].imshow(ytrue[plot_idx, ::-1, :, 0].numpy(), vmin=0, vmax=1, cmap="Spectral_r")
         axes[0].set_title("True Ozone")
         plt.colorbar(im0, ax=axes[0], label="Normalized")
 
-        im1 = axes[1].imshow(pred[i, ::-1, :, 0], vmin=0, vmax=1, cmap="Spectral_r")
+        im1 = axes[1].imshow(pred[plot_idx, ::-1, :, 0], vmin=0, vmax=1, cmap="Spectral_r")
         axes[1].set_title("Predicted Ozone")
         plt.colorbar(im1, ax=axes[1], label="Normalized")
 
-        im2 = axes[2].imshow(residual[i, ::-1, :, 0].numpy(), vmin=-1, vmax=1, cmap="bwr")
+        im2 = axes[2].imshow(residual[plot_idx, ::-1, :, 0].numpy(), vmin=-1, vmax=1, cmap="bwr")
         axes[2].set_title("Residual (True − Predicted)")
         plt.colorbar(im2, ax=axes[2], label="Residual")
 
-        im3 = axes[3].imshow(relative_error[i, ::-1, :, 0].numpy(), vmin=-100, vmax=100, cmap="coolwarm")
+        im3 = axes[3].imshow(relative_error[plot_idx, ::-1, :, 0].numpy(), vmin=-100, vmax=100, cmap="coolwarm")
         axes[3].set_title("Relative Error [%]")
         plt.colorbar(im3, ax=axes[3], label="%")
 
@@ -475,7 +494,7 @@ for config_name, res in results.items():
         plt.show()
 
         if not is_running_in_notebook(): # only save visualisations in CLI
-            plot_name = f"{model_type}_model_{training_frequency}_{config_name}_kfold{int(k_folds)}_snapshots-{i + 1:02d}.png"
+            plot_name = f"{model_type}_model_{training_frequency}_{config_name}_kfold{int(k_folds)}_snapshots-{plot_idx + 1:02d}.png"
             save_path = os.path.join(plot_path, plot_name)
             plt.savefig(save_path)
             print(f"Snapshots plot saved to: {save_path}")
